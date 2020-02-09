@@ -103,7 +103,7 @@ public:
 	/**
 	 * Sets the name of the texture parameter to set the render target to on the material.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Retainer|Effect")
+	UFUNCTION(BlueprintCallable, Category = "Retainer|Colour Space")
 	void SetTextureParameter(FName TextureParameter);
 
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
