@@ -99,7 +99,7 @@ SUIRetainerBoxWidget::~SUIRetainerBoxWidget()
 
 void SUIRetainerBoxWidget::UpdateWidgetRenderer()
 {
-	const bool bWriteContentInGammaSpace = ColourSpace != EUIRetainerBoxColourSpace::Linear;
+	const bool bWriteContentInGammaSpace = ColourSpace == EUIRetainerBoxColourSpace::sRGB || !bDynamicMaterialInUse;
 
 	if (!RenderingResources->WidgetRenderer)
 	{
@@ -109,16 +109,16 @@ void SUIRetainerBoxWidget::UpdateWidgetRenderer()
 	UTextureRenderTarget2D* RenderTarget = RenderingResources->RenderTarget;
 	FWidgetRenderer* WidgetRenderer = RenderingResources->WidgetRenderer;
 
-	WidgetRenderer->SetUseGammaCorrection(bWriteContentInGammaSpace ? true : false);
+	WidgetRenderer->SetUseGammaCorrection(bWriteContentInGammaSpace);
 	WidgetRenderer->SetIsPrepassNeeded(false);
 	WidgetRenderer->SetClearHitTestGrid(false);
 
 	// Update the render target to match the current gamma rendering preferences.
-	if (RenderTarget && RenderTarget->SRGB == bWriteContentInGammaSpace)
-	{
-		RenderTarget->TargetGamma = bWriteContentInGammaSpace ? 0.f : 1.f;
-		RenderTarget->SRGB = bWriteContentInGammaSpace ? true : false;
 
+	if (RenderTarget)
+	{
+		RenderTarget->TargetGamma = !bWriteContentInGammaSpace ? 0.f : 1.f;
+		RenderTarget->SRGB = !bWriteContentInGammaSpace;
 		RenderTarget->UpdateResource();
 	}
 }
@@ -254,11 +254,13 @@ void SUIRetainerBoxWidget::SetEffectMaterial(UMaterialInterface* EffectMaterial)
 		RenderingResources->DynamicEffect = DynamicEffect;
 
 		SurfaceBrush.SetResourceObject(RenderingResources->DynamicEffect);
+		bDynamicMaterialInUse = true;
 	}
 	else
 	{
 		RenderingResources->DynamicEffect = nullptr;
 		SurfaceBrush.SetResourceObject(RenderingResources->RenderTarget);
+		bDynamicMaterialInUse = false;
 	}
 
 	UpdateWidgetRenderer();
@@ -489,7 +491,6 @@ int32 SUIRetainerBoxWidget::OnPaint(const FPaintArgs& Args, const FGeometry& All
 			FWidgetRenderer* WidgetRenderer = RenderingResources->WidgetRenderer;
 			UMaterialInstanceDynamic* DynamicEffect = RenderingResources->DynamicEffect;
 
-			const bool bDynamicMaterialInUse = (DynamicEffect != nullptr);
 			if (bDynamicMaterialInUse)
 			{
 				DynamicEffect->SetTextureParameterValue(DynamicEffectTextureParameter, RenderTarget);
@@ -500,14 +501,12 @@ int32 SUIRetainerBoxWidget::OnPaint(const FPaintArgs& Args, const FGeometry& All
 				LayerId,
 				AllottedGeometry.ToPaintGeometry(),
 				&SurfaceBrush,
-				// We always write out the content in gamma space, so when we render the final version we need to
-				// render without gamma correction enabled.
-				ColourSpace != EUIRetainerBoxColourSpace::Linear
-					? ESlateDrawEffect::PreMultipliedAlpha | ESlateDrawEffect::NoGamma
-					: ESlateDrawEffect::None,
-				ColourSpace != EUIRetainerBoxColourSpace::Linear 
+				ColourSpace == EUIRetainerBoxColourSpace::Linear && bDynamicMaterialInUse
+					? ESlateDrawEffect::None
+					: ESlateDrawEffect::PreMultipliedAlpha | ESlateDrawEffect::NoGamma,
+				ColourSpace == EUIRetainerBoxColourSpace::Linear && bDynamicMaterialInUse
 					? FLinearColor(AdjustedColor.R, AdjustedColor.G, AdjustedColor.B, ComputedColorAndOpacity.A)
-					: FLinearColor(PremultipliedColorAndOpacity.R, PremultipliedColorAndOpacity.G, PremultipliedColorAndOpacity.B, PremultipliedColorAndOpacity.A)
+					: PremultipliedColorAndOpacity
 			);
 
 			if (RootCacheNode)

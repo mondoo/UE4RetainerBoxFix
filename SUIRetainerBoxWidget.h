@@ -146,4 +146,6 @@ private:
 	mutable int32 LastUsedCachedNodeIndex;
 
 	EUIRetainerBoxColourSpace ColourSpace = EUIRetainerBoxColourSpace::Linear;
+
+	bool bDynamicMaterialInUse = false;
 };
