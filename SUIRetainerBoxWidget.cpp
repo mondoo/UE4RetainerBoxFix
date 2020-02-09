@@ -109,7 +109,6 @@ void SUIRetainerBoxWidget::UpdateWidgetRenderer()
 	UTextureRenderTarget2D* RenderTarget = RenderingResources->RenderTarget;
 	FWidgetRenderer* WidgetRenderer = RenderingResources->WidgetRenderer;
 
-	WidgetRenderer->SetUseGammaCorrection(false);
 	WidgetRenderer->SetUseGammaCorrection(bWriteContentInGammaSpace ? true : false);
 	WidgetRenderer->SetIsPrepassNeeded(false);
 	WidgetRenderer->SetClearHitTestGrid(false);
